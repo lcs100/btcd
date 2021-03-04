@@ -45,11 +45,22 @@ type MsgBlock struct {
 	Transactions []*MsgTx
 }
 
+// MsgProof type
+type MsgProof struct {
+	Header       ProofHeader
+	Transactions []*MsgTx
+}
+
 // AddTransaction adds a transaction to the message.
 func (msg *MsgBlock) AddTransaction(tx *MsgTx) error {
 	msg.Transactions = append(msg.Transactions, tx)
 	return nil
+}
 
+// AddTransaction adds tx to the proof
+func (msg *MsgProof) AddTransaction(tx *MsgTx) error {
+	msg.Transactions = append(msg.Transactions, tx)
+	return nil
 }
 
 // ClearTransactions removes all transactions from the message.

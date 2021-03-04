@@ -219,6 +219,12 @@ type BlockTemplate struct {
 	WitnessCommitment []byte
 }
 
+// ProofTemplate definition
+type ProofTemplate struct {
+	Proof           *wire.MsgProof
+	ValidPayAddress bool
+}
+
 // mergeUtxoView adds all of the entries in viewB to viewA.  The result is that
 // viewA will contain all of its original entries plus all of the entries
 // in viewB.  It will replace any entries in viewB which also exist in viewA
@@ -440,7 +446,7 @@ func NewBlkTmplGenerator(policy *Policy, params *chaincfg.Params,
 //  |  transactions (while block size   |   |
 //  |  <= policy.BlockMinSize)          |   |
 //   -----------------------------------  --
-func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress btcutil.Address) (*BlockTemplate, error) {
+func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress btcutil.Address) (*BlockTemplate, *ProofTemplate, error) {
 	// Extend the most recently known best block.
 	best := g.chain.BestSnapshot()
 	nextBlockHeight := best.Height + 1
@@ -456,12 +462,12 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress btcutil.Address) (*Bloc
 	extraNonce := uint64(0)
 	coinbaseScript, err := standardCoinbaseScript(nextBlockHeight, extraNonce)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	coinbaseTx, err := createCoinbaseTx(g.chainParams, coinbaseScript,
 		nextBlockHeight, payToAddress)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	coinbaseSigOpCost := int64(blockchain.CountSigOps(coinbaseTx)) * blockchain.WitnessScaleFactor
 
@@ -608,7 +614,7 @@ mempoolLoop:
 	// OP_RETURN output in the coinbase transaction.
 	segwitState, err := g.chain.ThresholdState(chaincfg.DeploymentSegwit)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	segwitActive := segwitState == blockchain.ThresholdActive
 
@@ -842,17 +848,17 @@ mempoolLoop:
 	// Calculate the required difficulty for the block.  The timestamp
 	// is potentially adjusted to ensure it comes after the median time of
 	// the last several blocks per the chain consensus rules.
-	ts := medianAdjustedTime(best, g.timeSource)
+	ts := medianAdjustedTime(best, g.timeSource) // timestamp
 	reqDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Calculate the next expected block version based on the state of the
 	// rule change deployments.
 	nextBlockVersion, err := g.chain.CalcNextBlockVersion()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create a new block ready to be solved.
@@ -867,7 +873,19 @@ mempoolLoop:
 	}
 	for _, tx := range blockTxns {
 		if err := msgBlock.AddTransaction(tx.MsgTx()); err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+	}
+
+	// Create a new proof ready to be solved
+	var msgProof wire.MsgProof
+	msgProof.Header = wire.ProofHeader{
+		Bits:      reqDifficulty,
+		Timestamp: ts,
+	}
+	for _, tx := range blockTxns {
+		if err := msgProof.AddTransaction(tx.MsgTx()); err != nil {
+			return nil, nil, err
 		}
 	}
 
@@ -877,7 +895,7 @@ mempoolLoop:
 	block := btcutil.NewBlock(&msgBlock)
 	block.SetHeight(nextBlockHeight)
 	if err := g.chain.CheckConnectBlockTemplate(block); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	log.Debugf("Created new block template (%d transactions, %d in "+
@@ -886,13 +904,16 @@ mempoolLoop:
 		blockWeight, blockchain.CompactToBig(msgBlock.Header.Bits))
 
 	return &BlockTemplate{
-		Block:             &msgBlock,
-		Fees:              txFees,
-		SigOpCosts:        txSigOpCosts,
-		Height:            nextBlockHeight,
-		ValidPayAddress:   payToAddress != nil,
-		WitnessCommitment: witnessCommitment,
-	}, nil
+			Block:             &msgBlock,
+			Fees:              txFees,
+			SigOpCosts:        txSigOpCosts,
+			Height:            nextBlockHeight,
+			ValidPayAddress:   payToAddress != nil,
+			WitnessCommitment: witnessCommitment,
+		}, &ProofTemplate{
+			Proof:           &msgProof,
+			ValidPayAddress: payToAddress != nil,
+		}, err
 }
 
 // UpdateBlockTime updates the timestamp in the header of the passed block to

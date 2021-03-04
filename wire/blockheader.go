@@ -40,6 +40,13 @@ type BlockHeader struct {
 	Nonce uint32
 }
 
+// ProofHeader definition
+type ProofHeader struct {
+	Bits      uint32
+	Timestamp time.Time
+	Nonce     uint32
+}
+
 // blockHeaderLen is a constant that represents the number of bytes for a block
 // header.
 const blockHeaderLen = 80
