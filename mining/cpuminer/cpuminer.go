@@ -220,6 +220,10 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	header := &msgBlock.Header
 	targetDifficulty := blockchain.CompactToBig(header.Bits)
 
+	// some variables about proof
+	proofHeader := &msgProof.Header
+	proofTargetDifficulty := blockchain.CompactToBig(proofHeader.Bits)
+
 	// Initial state.
 	lastGenerated := time.Now()
 	lastTxUpdate := m.g.TxSource().LastUpdated()
@@ -277,12 +281,25 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 			hash := header.BlockHash()
 			hashesCompleted += 2
 
-			// The block is solved when the new block hash is less
-			// than the target difficulty.  Yay!
-			if blockchain.HashToBig(&hash).Cmp(targetDifficulty) <= 0 {
-				m.updateHashes <- hashesCompleted
-				return true
+			// first choose random
+			rand.Seed(time.Now().Unix())
+			randNumber := rand.Intn(2)
+			if randNumber == 1 {
+				// proofHeader
+				proofHeader.Nonce = i
+				proofHash := proofHeader.ProofHash()
+				if blockchain.HashToBig(&proofHash).Cmp(proofTargetDifficulty) <= 0 {
+					return true
+				}
+			} else {
+				// The block is solved when the new block hash is less
+				// than the target difficulty.  Yay!
+				if blockchain.HashToBig(&hash).Cmp(targetDifficulty) <= 0 {
+					m.updateHashes <- hashesCompleted
+					return true
+				}
 			}
+
 		}
 	}
 
@@ -357,6 +374,8 @@ out:
 		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) {
 			block := btcutil.NewBlock(template.Block)
 			m.submitBlock(block)
+
+			// here is the things to do
 		}
 	}
 
@@ -595,7 +614,7 @@ func (m *CPUMiner) GenerateNBlocks(n uint32) ([]*chainhash.Hash, error) {
 		// Create a new block template using the available transactions
 		// in the memory pool as a source of transactions to potentially
 		// include in the block.
-		template, err := m.g.NewBlockTemplate(payToAddr)
+		template, _, err := m.g.NewBlockTemplate(payToAddr)
 		m.submitBlockLock.Unlock()
 		if err != nil {
 			errStr := fmt.Sprintf("Failed to create new block "+
@@ -608,7 +627,7 @@ func (m *CPUMiner) GenerateNBlocks(n uint32) ([]*chainhash.Hash, error) {
 		// with false when conditions that trigger a stale block, so
 		// a new block template can be generated.  When the return is
 		// true a solution was found, so submit the solved block.
-		if m.solveBlock(template.Block, curHeight+1, ticker, nil) {
+		if m.solveBlock(template.Block, curHeight+1, ticker, nil, nil) {
 			block := btcutil.NewBlock(template.Block)
 			m.submitBlock(block)
 			blockHashes[i] = block.Hash()

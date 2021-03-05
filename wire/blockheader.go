@@ -63,6 +63,14 @@ func (h *BlockHeader) BlockHash() chainhash.Hash {
 	return chainhash.DoubleHashH(buf.Bytes())
 }
 
+// ProofHash computes proof header
+func (h *ProofHeader) ProofHash() chainhash.Hash {
+	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
+	_ = writeProofHeader(buf, 0, h)
+
+	return chainhash.DoubleHashH(buf.Bytes())
+}
+
 // BtcDecode decodes r using the bitcoin protocol encoding into the receiver.
 // This is part of the Message interface implementation.
 // See Deserialize for decoding block headers stored to disk, such as in a
@@ -132,4 +140,10 @@ func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint32(bh.Timestamp.Unix())
 	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
 		sec, bh.Bits, bh.Nonce)
+}
+
+// writeProofHeader
+func writeProofHeader(w io.Writer, pver uint32, ph *ProofHeader) error {
+	sec := uint32(ph.Timestamp.Unix())
+	return writeElements(w, sec, ph.Bits, ph.Nonce)
 }
