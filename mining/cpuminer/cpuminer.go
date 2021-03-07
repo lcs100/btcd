@@ -66,6 +66,9 @@ type Config struct {
 	// rules and handling as any other block coming from the network.
 	ProcessBlock func(*btcutil.Block, blockchain.BehaviorFlags) (bool, error)
 
+	// ProcessProof definition
+	ProcessProof func(*btcutil.Proof) (bool, error)
+
 	// ConnectedCount defines the function to use to obtain how many other
 	// peers the server is connected to.  This is used by the automatic
 	// persistent mining routine to determine whether or it should attempt
@@ -195,6 +198,26 @@ func (m *CPUMiner) submitBlock(block *btcutil.Block) bool {
 	return true
 }
 
+// submitProof definition
+func (m *CPUMiner) submitProof(proof *btcutil.Proof) bool {
+	m.submitBlockLock.Lock()
+	defer m.submitBlockLock.Unlock()
+
+	// Process proof
+	isValid, err := m.cfg.ProcessProof(proof)
+	if err != nil {
+		log.Infof("Block submitted via CPU miner rejected")
+	}
+	if isValid {
+		log.Infof("proof submitted via CPU miner is invalid")
+	}
+
+	// enter node into next round
+
+	log.Infof("Proof submitted via CPU miner is accepted")
+	return true
+}
+
 // solveBlock attempts to find some combination of a nonce, extra nonce, and
 // current timestamp which makes the passed block hash to a value less than the
 // target difficulty.  The timestamp is updated periodically and the passed
@@ -205,7 +228,7 @@ func (m *CPUMiner) submitBlock(block *btcutil.Block) bool {
 // stale block such as a new block showing up or periodically when there are
 // new transactions and enough time has elapsed without finding a solution.
 func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
-	ticker *time.Ticker, quit chan struct{}, msgProof *wire.MsgProof) bool {
+	ticker *time.Ticker, quit chan struct{}, msgProof *wire.MsgProof) uint32 {
 
 	// Choose a random extra nonce offset for this block template and
 	// worker.
@@ -244,7 +267,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 		for i := uint32(0); i <= maxNonce; i++ {
 			select {
 			case <-quit:
-				return false
+				return 0
 
 			case <-ticker.C:
 				m.updateHashes <- hashesCompleted
@@ -254,7 +277,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 				// has changed.
 				best := m.g.BestSnapshot()
 				if !header.PrevBlock.IsEqual(&best.Hash) {
-					return false
+					return 0
 				}
 
 				// The current block is stale if the memory pool
@@ -264,7 +287,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 				if lastTxUpdate != m.g.TxSource().LastUpdated() &&
 					time.Now().After(lastGenerated.Add(time.Minute)) {
 
-					return false
+					return 0
 				}
 
 				m.g.UpdateBlockTime(msgBlock)
@@ -289,21 +312,21 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 				proofHeader.Nonce = i
 				proofHash := proofHeader.ProofHash()
 				if blockchain.HashToBig(&proofHash).Cmp(proofTargetDifficulty) <= 0 {
-					return true
+					return 1
 				}
 			} else {
 				// The block is solved when the new block hash is less
 				// than the target difficulty.  Yay!
 				if blockchain.HashToBig(&hash).Cmp(targetDifficulty) <= 0 {
 					m.updateHashes <- hashesCompleted
-					return true
+					return 2
 				}
 			}
 
 		}
 	}
 
-	return false
+	return 0
 }
 
 // generateBlocks is a worker that is controlled by the miningWorkerController.
@@ -371,11 +394,14 @@ out:
 		// with false when conditions that trigger a stale block, so
 		// a new block template can be generated.  When the return is
 		// true a solution was found, so submit the solved block.
-		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) {
+		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) == 2 {
 			block := btcutil.NewBlock(template.Block)
 			m.submitBlock(block)
+		}
 
-			// here is the things to do
+		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) == 1 {
+			proof := btcutil.NewProof(proofTemplate.Proof)
+			m.submitProof(proof)
 		}
 	}
 

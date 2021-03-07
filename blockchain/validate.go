@@ -569,6 +569,68 @@ func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource Median
 	return nil
 }
 
+// CheckProofOfWork definition
+func checkProofOfProof(header *wire.ProofHeader, powLimit *big.Int) error {
+	target := CompactToBig(header.Bits)
+	if target.Sign() <= 0 {
+		str := fmt.Sprintf("proof target difficulty of %064x is too low", target)
+		return ruleError(ErrUnexpectedDifficulty, str)
+	}
+
+	if target.Cmp(powLimit) > 0 {
+		str := fmt.Sprintf("block target difficulty of %064x is "+
+			"higher than max of %064x", target, powLimit)
+		return ruleError(ErrUnexpectedDifficulty, str)
+	}
+
+	hash := header.ProofHash()
+	hashNum := HashToBig(&hash)
+
+	if hashNum.Cmp(target) > 0 {
+		str := fmt.Sprintf("block hash of %064x is higher than "+
+			"expected max of %064x", hashNum, target)
+		return ruleError(ErrHighHash, str)
+	}
+
+	return nil
+}
+
+// CheckProofHeaderSanity definition
+func checkProofHeaderSanity(header *wire.ProofHeader, powLimit *big.Int, timeSource MedianTimeSource) error {
+	err := checkProofOfProof(header, powLimit)
+	if err != nil {
+		return err
+	}
+
+	if !header.Timestamp.Equal(time.Unix(header.Timestamp.Unix(), 0)) {
+		str := fmt.Sprintf("block timestamp of %v has a higher"+
+			"precision than one second", header.Timestamp)
+		return ruleError(ErrInvalidTime, str)
+	}
+
+	maxTimestamp := timeSource.AdjustedTime().Add(time.Second * MaxTimeOffsetSeconds)
+	if header.Timestamp.After(maxTimestamp) {
+		str := fmt.Sprintf("block timestamp of %v is too far in the "+
+			"future", header.Timestamp)
+		return ruleError(ErrTimeTooNew, str)
+	}
+
+	return nil
+}
+
+// CheckProofSanity definition
+func CheckProofSanity(proof *btcutil.Proof, powLimit *big.Int, timeSource MedianTimeSource) error {
+	msgProof := proof.MsgProof()
+	header := &msgProof.Header
+
+	err := checkProofHeaderSanity(header, powLimit, timeSource)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CheckBlockSanity performs some preliminary checks on a block to ensure it is
 // sane before continuing with block processing.  These checks are context free.
 func CheckBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource MedianTimeSource) error {

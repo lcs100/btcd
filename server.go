@@ -2828,6 +2828,7 @@ func newServer(listenAddrs, agentBlacklist, agentWhitelist []string,
 		BlockTemplateGenerator: blockTemplateGenerator,
 		MiningAddrs:            cfg.miningAddrs,
 		ProcessBlock:           s.syncManager.ProcessBlock,
+		ProcessProof:           s.syncManager.ProcessProof,
 		ConnectedCount:         s.ConnectedCount,
 		IsCurrent:              s.syncManager.IsCurrent,
 	})

@@ -112,6 +112,12 @@ type processBlockResponse struct {
 	err      error
 }
 
+// processProofResponse definition
+type processProofResponse struct {
+	isValid bool
+	err     error
+}
+
 // processBlockMsg is a message type to be sent across the message channel
 // for requested a block is processed.  Note this call differs from blockMsg
 // above in that blockMsg is intended for blocks that came from peers and have
@@ -121,6 +127,12 @@ type processBlockMsg struct {
 	block *btcutil.Block
 	flags blockchain.BehaviorFlags
 	reply chan processBlockResponse
+}
+
+// processProofMsg definition
+type processProofMsg struct {
+	proof *btcutil.Proof
+	reply chan processProofResponse
 }
 
 // isCurrentMsg is a message type to be sent across the message channel for
@@ -1359,6 +1371,21 @@ out:
 					err:      nil,
 				}
 
+			case processProofMsg:
+				isValid, err := sm.chain.ProcessProof(
+					msg.proof)
+				if err != nil {
+					msg.reply <- processProofResponse{
+						isValid: false,
+						err:     err,
+					}
+				}
+
+				msg.reply <- processProofResponse{
+					isValid: isValid,
+					err:     nil,
+				}
+
 			case isCurrentMsg:
 				msg.reply <- sm.current()
 
@@ -1594,6 +1621,14 @@ func (sm *SyncManager) ProcessBlock(block *btcutil.Block, flags blockchain.Behav
 	sm.msgChan <- processBlockMsg{block: block, flags: flags, reply: reply}
 	response := <-reply
 	return response.isOrphan, response.err
+}
+
+// ProcessProof definition
+func (sm *SyncManager) ProcessProof(proof *btcutil.Proof) (bool, error) {
+	reply := make(chan processProofResponse, 1)
+	sm.msgChan <- processProofMsg{proof: proof, reply: reply}
+	response := <-reply
+	return response.isValid, response.err
 }
 
 // IsCurrent returns whether or not the sync manager believes it is synced with
