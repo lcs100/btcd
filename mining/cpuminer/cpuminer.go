@@ -5,6 +5,7 @@
 package cpuminer
 
 import (
+	"container/list"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -46,10 +47,10 @@ var (
 	// and is based on the number of processor cores.  This helps ensure the
 	// system stays reasonably responsive under heavy load.
 	defaultNumWorkers = uint32(runtime.NumCPU())
-
-	// committeeList
-
 )
+
+// CommitteeList definition
+var CommitteeList list.List
 
 // Config is a descriptor containing the cpu miner configuration.
 type Config struct {
@@ -419,13 +420,21 @@ out:
 		// true a solution was found, so submit the solved block.
 		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) == 2 {
 			block := btcutil.NewBlock(template.Block)
-			m.submitBlock(block)
+			if m.submitBlock(block) == true {
+				// enter sleep mode
+
+			}
 		}
 
 		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) == 1 {
 			proof := btcutil.NewProof(proofTemplate.Proof)
 			ip := getIPAddress()
-			m.submitProof(proof, ip)
+			if m.submitProof(proof, ip) == true {
+				// continue work
+				CommitteeList.PushBack(ip)
+
+			}
+
 		}
 	}
 

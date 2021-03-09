@@ -850,6 +850,8 @@ mempoolLoop:
 	// the last several blocks per the chain consensus rules.
 	ts := medianAdjustedTime(best, g.timeSource) // timestamp
 	reqDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
+	///////////////////// difficulty
+	proofDifficulty, err := g.chain.CalcNextRequiredDifficultyNR(ts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -880,7 +882,7 @@ mempoolLoop:
 	// Create a new proof ready to be solved
 	var msgProof wire.MsgProof
 	msgProof.Header = wire.ProofHeader{
-		Bits:      reqDifficulty,
+		Bits:      proofDifficulty,
 		Timestamp: ts,
 	}
 	for _, tx := range blockTxns {

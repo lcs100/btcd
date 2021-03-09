@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/mining/cpuminer"
 )
 
 // BehaviorFlags is a bitmask defining tweaks to the normal behavior when
@@ -252,6 +253,7 @@ func (b *BlockChain) ProcessProof(proof *btcutil.Proof, ip string) (bool, error)
 	}
 
 	// make a list
+	CommitteeList.PushBack(ip)
 
 	return true, nil
 }
