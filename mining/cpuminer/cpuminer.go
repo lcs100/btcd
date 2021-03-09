@@ -5,7 +5,6 @@
 package cpuminer
 
 import (
-	"container/list"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -48,9 +47,6 @@ var (
 	// system stays reasonably responsive under heavy load.
 	defaultNumWorkers = uint32(runtime.NumCPU())
 )
-
-// CommitteeList definition
-var CommitteeList list.List
 
 // Config is a descriptor containing the cpu miner configuration.
 type Config struct {
@@ -431,7 +427,7 @@ out:
 			ip := getIPAddress()
 			if m.submitProof(proof, ip) == true {
 				// continue work
-				CommitteeList.PushBack(ip)
+				blockchain.CommitteeList.PushBack(ip)
 
 			}
 

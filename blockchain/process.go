@@ -5,18 +5,21 @@
 package blockchain
 
 import (
+	"container/list"
 	"fmt"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/database"
 	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcd/mining/cpuminer"
 )
 
 // BehaviorFlags is a bitmask defining tweaks to the normal behavior when
 // performing chain processing and consensus rules checks.
 type BehaviorFlags uint32
+
+// CommitteeList definition
+var CommitteeList list.List
 
 const (
 	// BFFastAdd may be set to indicate that several checks can be avoided
