@@ -244,12 +244,14 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 }
 
 // ProcessProof definition
-func (b *BlockChain) ProcessProof(proof *btcutil.Proof) (bool, error) {
+func (b *BlockChain) ProcessProof(proof *btcutil.Proof, ip string) (bool, error) {
 	err := CheckProofSanity(proof, b.chainParams.PowLimit, b.timeSource)
 
 	if err != nil {
 		return false, err
 	}
+
+	// make a list
 
 	return true, nil
 }

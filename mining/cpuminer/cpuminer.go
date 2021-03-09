@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"runtime"
 	"sync"
 	"time"
@@ -45,6 +46,9 @@ var (
 	// and is based on the number of processor cores.  This helps ensure the
 	// system stays reasonably responsive under heavy load.
 	defaultNumWorkers = uint32(runtime.NumCPU())
+
+	// committeeList
+
 )
 
 // Config is a descriptor containing the cpu miner configuration.
@@ -67,7 +71,7 @@ type Config struct {
 	ProcessBlock func(*btcutil.Block, blockchain.BehaviorFlags) (bool, error)
 
 	// ProcessProof definition
-	ProcessProof func(*btcutil.Proof) (bool, error)
+	ProcessProof func(*btcutil.Proof, string) (bool, error)
 
 	// ConnectedCount defines the function to use to obtain how many other
 	// peers the server is connected to.  This is used by the automatic
@@ -199,14 +203,14 @@ func (m *CPUMiner) submitBlock(block *btcutil.Block) bool {
 }
 
 // submitProof definition
-func (m *CPUMiner) submitProof(proof *btcutil.Proof) bool {
+func (m *CPUMiner) submitProof(proof *btcutil.Proof, ip string) bool {
 	m.submitBlockLock.Lock()
 	defer m.submitBlockLock.Unlock()
 
 	// Process proof
-	isValid, err := m.cfg.ProcessProof(proof)
+	isValid, err := m.cfg.ProcessProof(proof, ip)
 	if err != nil {
-		log.Infof("Block submitted via CPU miner rejected")
+		log.Infof("proof submitted via CPU miner rejected")
 	}
 	if isValid {
 		log.Infof("proof submitted via CPU miner is invalid")
@@ -329,6 +333,25 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	return 0
 }
 
+// getIpAddress definition
+func getIPAddress() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		fmt.Println(err)
+		return "error"
+	}
+	for _, value := range addrs {
+		if ipnet, ok := value.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ip := ipnet.IP.String()
+				return ip
+			}
+		}
+	}
+
+	return "error"
+}
+
 // generateBlocks is a worker that is controlled by the miningWorkerController.
 // It is self contained in that it creates block templates and attempts to solve
 // them while detecting when it is performing stale work and reacting
@@ -401,7 +424,8 @@ out:
 
 		if m.solveBlock(template.Block, curHeight+1, ticker, quit, proofTemplate.Proof) == 1 {
 			proof := btcutil.NewProof(proofTemplate.Proof)
-			m.submitProof(proof)
+			ip := getIPAddress()
+			m.submitProof(proof, ip)
 		}
 	}
 

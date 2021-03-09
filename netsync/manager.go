@@ -132,6 +132,7 @@ type processBlockMsg struct {
 // processProofMsg definition
 type processProofMsg struct {
 	proof *btcutil.Proof
+	ip    string
 	reply chan processProofResponse
 }
 
@@ -1373,7 +1374,7 @@ out:
 
 			case processProofMsg:
 				isValid, err := sm.chain.ProcessProof(
-					msg.proof)
+					msg.proof, msg.ip)
 				if err != nil {
 					msg.reply <- processProofResponse{
 						isValid: false,
@@ -1624,9 +1625,9 @@ func (sm *SyncManager) ProcessBlock(block *btcutil.Block, flags blockchain.Behav
 }
 
 // ProcessProof definition
-func (sm *SyncManager) ProcessProof(proof *btcutil.Proof) (bool, error) {
+func (sm *SyncManager) ProcessProof(proof *btcutil.Proof, ip string) (bool, error) {
 	reply := make(chan processProofResponse, 1)
-	sm.msgChan <- processProofMsg{proof: proof, reply: reply}
+	sm.msgChan <- processProofMsg{proof: proof, ip: ip, reply: reply}
 	response := <-reply
 	return response.isValid, response.err
 }
