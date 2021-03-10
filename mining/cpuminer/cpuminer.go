@@ -418,7 +418,7 @@ out:
 			block := btcutil.NewBlock(template.Block)
 			if m.submitBlock(block) == true {
 				// enter sleep mode
-
+				continue
 			}
 		}
 
@@ -428,7 +428,7 @@ out:
 			if m.submitProof(proof, ip) == true {
 				// continue work
 				blockchain.CommitteeList.PushBack(ip)
-
+				continue
 			}
 
 		}
