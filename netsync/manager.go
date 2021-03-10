@@ -1326,6 +1326,7 @@ out:
 	for {
 		select {
 		case m := <-sm.msgChan:
+
 			switch msg := m.(type) {
 			case *newPeerMsg:
 				sm.handleNewPeerMsg(msg.peer)
@@ -1358,6 +1359,7 @@ out:
 				msg.reply <- peerID
 
 			case processBlockMsg:
+
 				_, isOrphan, err := sm.chain.ProcessBlock(
 					msg.block, msg.flags)
 				if err != nil {
@@ -1373,6 +1375,8 @@ out:
 				}
 
 			case processProofMsg:
+				log.Infof("ip:%s", msg.ip)
+				time.Sleep(time.Duration(2) * time.Second)
 				isValid, err := sm.chain.ProcessProof(
 					msg.proof, msg.ip)
 				if err != nil {
