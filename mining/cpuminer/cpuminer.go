@@ -209,13 +209,13 @@ func (m *CPUMiner) submitProof(proof *btcutil.Proof, ip string) bool {
 	if err != nil {
 		log.Infof("proof submitted via CPU miner rejected")
 	}
-	if isValid {
+	if isValid == false {
 		log.Infof("proof submitted via CPU miner is invalid")
 	}
 
 	// enter node into next round
 
-	log.Infof("Proof submitted via CPU miner is accepted")
+	log.Infof("Proof submitted via CPU miner accepted (hash %s)", proof.Hash())
 	return true
 }
 
