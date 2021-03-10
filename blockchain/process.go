@@ -251,8 +251,8 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 func (b *BlockChain) ProcessProof(proof *btcutil.Proof, ip string) (bool, error) {
 	err := CheckProofSanity(proof, b.chainParams.PowLimit, b.timeSource)
 
-	log.Infof("proof hash: %s", proof.MsgProof().Header.ProofHash())
-	log.Infof("powlimit: %s", b.chainParams.PowLimit.String())
+	log.Infof("proof nonce: %s", proof.MsgProof().Header.Nonce)
+	log.Infof("pow: %s", proof.MsgProof().Header.Bits)
 	log.Infof("ip: %s", ip)
 	time.Sleep(time.Duration(10) * time.Second)
 
