@@ -282,6 +282,11 @@ func (msg *MsgBlock) BlockHash() chainhash.Hash {
 	return msg.Header.BlockHash()
 }
 
+// ProofHash computes the block identifier hash for this block.
+func (msg *MsgProof) ProofHash() chainhash.Hash {
+	return msg.Header.ProofHash()
+}
+
 // TxHashes returns a slice of hashes of all of transactions in this block.
 func (msg *MsgBlock) TxHashes() ([]chainhash.Hash, error) {
 	hashList := make([]chainhash.Hash, 0, len(msg.Transactions))

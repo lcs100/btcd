@@ -585,6 +585,31 @@ func (sp *serverPeer) OnBlock(_ *peer.Peer, msg *wire.MsgBlock, buf []byte) {
 	<-sp.blockProcessed
 }
 
+//
+func (sp *serverPeer) OnProof(_ *peer.Peer, msg *wire.MsgProof, buf []byte) {
+	// Convert the raw MsgBlock to a btcutil.Block which provides some
+	// convenience methods and things such as hash caching.
+	proof := btcutil.NewProofFromProofAndBytes(msg, buf)
+
+	// Add the block to the known inventory for the peer.
+	iv := wire.NewInvVect(wire.InvTypeBlock, proof.Hash())
+	sp.AddKnownInventory(iv)
+
+	// Queue the block up to be handled by the block
+	// manager and intentionally block further receives
+	// until the bitcoin block is fully processed and known
+	// good or bad.  This helps prevent a malicious peer
+	// from queuing up a bunch of bad blocks before
+	// disconnecting (or being disconnected) and wasting
+	// memory.  Additionally, this behavior is depended on
+	// by at least the block acceptance test tool as the
+	// reference implementation processes blocks in the same
+	// thread and therefore blocks further messages until
+	// the bitcoin block has been fully processed.
+	sp.server.syncManager.QueueProof(proof, sp.Peer, sp.blockProcessed)
+	<-sp.blockProcessed
+}
+
 // OnInv is invoked when a peer receives an inv bitcoin message and is
 // used to examine the inventory being advertised by the remote peer and react
 // accordingly.  We pass the message down to blockmanager which will call

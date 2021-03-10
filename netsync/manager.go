@@ -65,6 +65,13 @@ type blockMsg struct {
 	reply chan struct{}
 }
 
+// proofMsg definition
+type proofMsg struct {
+	proof *btcutil.Proof
+	peer  *peerpkg.Peer
+	reply chan struct{}
+}
+
 // invMsg packages a bitcoin inv message and the peer it came from together
 // so the block handler has access to that information.
 type invMsg struct {
@@ -1336,6 +1343,7 @@ out:
 				msg.reply <- struct{}{}
 
 			case *blockMsg:
+				log.Infof("---------%s:", msg.block.Hash())
 				sm.handleBlockMsg(msg)
 				msg.reply <- struct{}{}
 
@@ -1359,7 +1367,7 @@ out:
 				msg.reply <- peerID
 
 			case processBlockMsg:
-
+				log.Infof("!!!!!!!!!!%s", msg.block.Hash())
 				_, isOrphan, err := sm.chain.ProcessBlock(
 					msg.block, msg.flags)
 				if err != nil {
@@ -1375,8 +1383,6 @@ out:
 				}
 
 			case processProofMsg:
-				log.Infof("ip:%s", msg.ip)
-				time.Sleep(time.Duration(2) * time.Second)
 				isValid, err := sm.chain.ProcessProof(
 					msg.proof, msg.ip)
 				if err != nil {
@@ -1538,6 +1544,17 @@ func (sm *SyncManager) QueueBlock(block *btcutil.Block, peer *peerpkg.Peer, done
 	}
 
 	sm.msgChan <- &blockMsg{block: block, peer: peer, reply: done}
+}
+
+// QueueProof definition
+func (sm *SyncManager) QueueProof(proof *btcutil.Proof, peer *peerpkg.Peer, done chan struct{}) {
+	// Don't accept more blocks if we're shutting down.
+	if atomic.LoadInt32(&sm.shutdown) != 0 {
+		done <- struct{}{}
+		return
+	}
+
+	sm.msgChan <- &proofMsg{proof: proof, peer: peer, reply: done}
 }
 
 // QueueInv adds the passed inv message and peer to the block handling queue.
