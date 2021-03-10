@@ -280,6 +280,7 @@ type serverPeer struct {
 	// The following chans are used to sync blockmanager and server.
 	txProcessed    chan struct{}
 	blockProcessed chan struct{}
+	proofProcessed chan struct{}
 }
 
 // newServerPeer returns a new serverPeer instance. The peer needs to be set by
@@ -607,7 +608,7 @@ func (sp *serverPeer) OnProof(_ *peer.Peer, msg *wire.MsgProof, buf []byte) {
 	// thread and therefore blocks further messages until
 	// the bitcoin block has been fully processed.
 	sp.server.syncManager.QueueProof(proof, sp.Peer, sp.blockProcessed)
-	<-sp.blockProcessed
+	<-sp.proofProcessed
 }
 
 // OnInv is invoked when a peer receives an inv bitcoin message and is
