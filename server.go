@@ -607,7 +607,7 @@ func (sp *serverPeer) OnProof(_ *peer.Peer, msg *wire.MsgProof, buf []byte) {
 	// reference implementation processes blocks in the same
 	// thread and therefore blocks further messages until
 	// the bitcoin block has been fully processed.
-	sp.server.syncManager.QueueProof(proof, sp.Peer, sp.blockProcessed)
+	sp.server.syncManager.QueueProof(proof, sp.Peer, sp.proofProcessed)
 	<-sp.proofProcessed
 }
 
