@@ -1382,6 +1382,9 @@ out:
 					err:      nil,
 				}
 
+			case *processProofMsg:
+				log.Infof("asdfhgjkasldfjasldsalfjaslkjflksjflkj")
+
 			case *proofMsg:
 				log.Infof("~~~~~~~~~~~~%s:", msg.proof.Hash())
 
