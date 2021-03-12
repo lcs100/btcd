@@ -852,6 +852,7 @@ mempoolLoop:
 	reqDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
 	///////////////////// difficulty
 	proofDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
+	log.Infof("%d, %d", reqDifficulty, proofDifficulty)
 	if err != nil {
 		return nil, nil, err
 	}
