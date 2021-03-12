@@ -1384,6 +1384,7 @@ out:
 
 			case processProofMsg:
 				log.Infof("asdfhgjkasldfjasldsalfjaslkjflksjflkj")
+				log.Infof("%s", msg.ip)
 
 			case *proofMsg:
 				log.Infof("~~~~~~~~~~~~%s:", msg.proof.Hash())
