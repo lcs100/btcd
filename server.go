@@ -2056,6 +2056,7 @@ func newPeerConfig(sp *serverPeer) *peer.Config {
 			OnMemPool:      sp.OnMemPool,
 			OnTx:           sp.OnTx,
 			OnBlock:        sp.OnBlock,
+			OnProof:        sp.OnProof,
 			OnInv:          sp.OnInv,
 			OnHeaders:      sp.OnHeaders,
 			OnGetData:      sp.OnGetData,

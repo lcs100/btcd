@@ -125,6 +125,9 @@ type MessageListeners struct {
 	// OnBlock is invoked when a peer receives a block bitcoin message.
 	OnBlock func(p *Peer, msg *wire.MsgBlock, buf []byte)
 
+	// OnProof is invoked when a peer receives a proof message
+	OnProof func(p *Peer, msg *wire.MsgProof, buf []byte)
+
 	// OnCFilter is invoked when a peer receives a cfilter bitcoin message.
 	OnCFilter func(p *Peer, msg *wire.MsgCFilter)
 

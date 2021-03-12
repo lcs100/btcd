@@ -1382,20 +1382,8 @@ out:
 					err:      nil,
 				}
 
-			case processProofMsg:
-				isValid, err := sm.chain.ProcessProof(
-					msg.proof, msg.ip)
-				if err != nil {
-					msg.reply <- processProofResponse{
-						isValid: false,
-						err:     err,
-					}
-				}
-
-				msg.reply <- processProofResponse{
-					isValid: isValid,
-					err:     nil,
-				}
+			case *proofMsg:
+				log.Infof("~~~~~~~~~~~~%s:", msg.proof.Hash())
 
 			case isCurrentMsg:
 				msg.reply <- sm.current()
