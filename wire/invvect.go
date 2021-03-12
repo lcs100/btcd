@@ -33,6 +33,7 @@ const (
 	InvTypeTx                   InvType = 1
 	InvTypeBlock                InvType = 2
 	InvTypeFilteredBlock        InvType = 3
+	InvTypeProof                InvType = 4
 	InvTypeWitnessBlock         InvType = InvTypeBlock | InvWitnessFlag
 	InvTypeWitnessTx            InvType = InvTypeTx | InvWitnessFlag
 	InvTypeFilteredWitnessBlock InvType = InvTypeFilteredBlock | InvWitnessFlag
@@ -43,6 +44,7 @@ var ivStrings = map[InvType]string{
 	InvTypeError:                "ERROR",
 	InvTypeTx:                   "MSG_TX",
 	InvTypeBlock:                "MSG_BLOCK",
+	InvTypeProof:                "MSG_PROOF",
 	InvTypeFilteredBlock:        "MSG_FILTERED_BLOCK",
 	InvTypeWitnessBlock:         "MSG_WITNESS_BLOCK",
 	InvTypeWitnessTx:            "MSG_WITNESS_TX",

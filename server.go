@@ -593,7 +593,7 @@ func (sp *serverPeer) OnProof(_ *peer.Peer, msg *wire.MsgProof, buf []byte) {
 	proof := btcutil.NewProofFromProofAndBytes(msg, buf)
 
 	// Add the block to the known inventory for the peer.
-	iv := wire.NewInvVect(wire.InvTypeBlock, proof.Hash())
+	iv := wire.NewInvVect(wire.InvTypeProof, proof.Hash())
 	sp.AddKnownInventory(iv)
 
 	// Queue the block up to be handled by the block
