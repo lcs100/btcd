@@ -851,7 +851,7 @@ mempoolLoop:
 	ts := medianAdjustedTime(best, g.timeSource) // timestamp
 	reqDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
 	///////////////////// difficulty
-	proofDifficulty, err := g.chain.CalcNextRequiredDifficultyNR(ts)
+	proofDifficulty, err := g.chain.CalcNextRequiredDifficulty(ts)
 	if err != nil {
 		return nil, nil, err
 	}

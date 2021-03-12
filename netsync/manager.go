@@ -1382,7 +1382,7 @@ out:
 					err:      nil,
 				}
 
-			case *processProofMsg:
+			case processProofMsg:
 				log.Infof("asdfhgjkasldfjasldsalfjaslkjflksjflkj")
 
 			case *proofMsg:
